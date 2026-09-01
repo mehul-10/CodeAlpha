@@ -199,7 +199,7 @@ logistic_search = GridSearchCV(
 logistic_search.fit(X_train, y_train)
 
 print("\nBest Logistic Regression Parameters:")
-print(logistic_search.best_params__)
+print(logistic_search.best_params_)
 
 print(
     f"Best CV Macro F1: "
@@ -221,7 +221,7 @@ rf_search = GridSearchCV(
 rf_search.fit(X_train, y_train)
 
 print("\nBest Random Forest Parameters:")
-print(rf_search.best_params__)
+print(rf_search.best_params_)
 
 print(
     f"Best CV Macro F1: "
