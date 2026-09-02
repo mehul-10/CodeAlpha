@@ -2,21 +2,51 @@ import librosa
 import numpy as np
 
 
+# ============================================================
+# PAD / CROP
+# ============================================================
+
+def pad_or_crop(feature, max_pad_len=174):
+    """
+    Make sure every feature has exactly 174 time frames.
+    """
+
+    if feature.shape[1] < max_pad_len:
+
+        pad_width = max_pad_len - feature.shape[1]
+
+        feature = np.pad(
+            feature,
+            ((0, 0), (0, pad_width)),
+            mode="constant"
+        )
+
+    else:
+
+        feature = feature[:, :max_pad_len]
+
+    return feature
+
+
+# ============================================================
+# FEATURE EXTRACTION
+# ============================================================
+
 def extract_mfcc(
     file_path,
     n_mfcc=40,
     max_pad_len=174
 ):
     """
-    Extract MFCC + Delta + Delta-Delta features.
+    Extract the same four feature channels used during training:
 
-    Output shape:
-        (40, 174, 3)
+    1. MFCC
+    2. Delta MFCC
+    3. Delta-Delta MFCC
+    4. Log-Mel Spectrogram
 
-    Channels:
-        0 -> MFCC
-        1 -> Delta
-        2 -> Delta-Delta
+    Returns:
+        numpy array with shape (40, 174, 4)
     """
 
     try:
@@ -31,7 +61,6 @@ def extract_mfcc(
             duration=3
         )
 
-
         # ----------------------------------------------------
         # MFCC
         # ----------------------------------------------------
@@ -42,6 +71,10 @@ def extract_mfcc(
             n_mfcc=n_mfcc
         )
 
+        mfcc = pad_or_crop(
+            mfcc,
+            max_pad_len
+        )
 
         # ----------------------------------------------------
         # Delta
@@ -51,6 +84,10 @@ def extract_mfcc(
             mfcc
         )
 
+        delta = pad_or_crop(
+            delta,
+            max_pad_len
+        )
 
         # ----------------------------------------------------
         # Delta-Delta
@@ -61,58 +98,50 @@ def extract_mfcc(
             order=2
         )
 
+        delta2 = pad_or_crop(
+            delta2,
+            max_pad_len
+        )
 
         # ----------------------------------------------------
-        # Pad / crop
+        # Mel Spectrogram
         # ----------------------------------------------------
 
-        def pad_or_crop(feature):
+        mel = librosa.feature.melspectrogram(
+            y=audio,
+            sr=sample_rate,
+            n_mels=40,
+            n_fft=2048,
+            hop_length=512
+        )
 
-            if feature.shape[1] < max_pad_len:
+        mel_db = librosa.power_to_db(
+            mel,
+            ref=np.max
+        )
 
-                pad_width = (
-                    max_pad_len - feature.shape[1]
-                )
-
-                feature = np.pad(
-                    feature,
-                    pad_width=(
-                        (0, 0),
-                        (0, pad_width)
-                    ),
-                    mode="constant"
-                )
-
-            else:
-
-                feature = feature[
-                    :, :max_pad_len
-                ]
-
-            return feature
-
-
-        mfcc = pad_or_crop(mfcc)
-        delta = pad_or_crop(delta)
-        delta2 = pad_or_crop(delta2)
-
+        mel_db = pad_or_crop(
+            mel_db,
+            max_pad_len
+        )
 
         # ----------------------------------------------------
-        # Stack as channels
+        # Stack features
         # ----------------------------------------------------
 
         features = np.stack(
             [
                 mfcc,
                 delta,
-                delta2
+                delta2,
+                mel_db
             ],
             axis=-1
         )
 
-
-        return features
-
+        return features.astype(
+            np.float32
+        )
 
     except Exception as e:
 

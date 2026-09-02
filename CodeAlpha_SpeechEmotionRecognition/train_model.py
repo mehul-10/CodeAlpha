@@ -4,7 +4,6 @@ import tensorflow as tf
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.metrics import classification_report
 
 from tensorflow.keras import layers, models
 from tensorflow.keras.callbacks import (
@@ -23,7 +22,7 @@ MODEL_DIR = "models"
 
 MODEL_PATH = os.path.join(
     MODEL_DIR,
-    "speech_emotion_cnn.keras"
+    "speech_emotion_crnn.keras"
 )
 
 LABEL_PATH = os.path.join(
@@ -31,10 +30,16 @@ LABEL_PATH = os.path.join(
     "emotion_labels.npy"
 )
 
-SEED = 42
+NORMALIZATION_PATH = os.path.join(
+    MODEL_DIR,
+    "normalization.npz"
+)
 
-np.random.seed(SEED)
-tf.random.set_seed(SEED)
+HISTORY_PATH = os.path.join(
+    MODEL_DIR,
+    "training_history.npz"
+)
+
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -44,31 +49,30 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # ============================================================
 
 print("=" * 60)
-print("SPEECH EMOTION RECOGNITION")
-print("IMPROVED CNN TRAINING")
+print("SPEECH EMOTION CRNN TRAINING")
 print("=" * 60)
 
 data = np.load(DATA_PATH)
 
-X = data["X"]
+X = data["X"].astype(np.float32)
 y = data["y"]
 actors = data["actors"]
 
-print("\nDataset loaded:")
-print(f"Features : {X.shape}")
-print(f"Labels   : {y.shape}")
-print(f"Actors   : {actors.shape}")
+print("\nDataset:")
+print("Features:", X.shape)
+print("Labels:", y.shape)
+print("Actors:", actors.shape)
 
 
 # ============================================================
 # LABEL ENCODING
 # ============================================================
 
-encoder = LabelEncoder()
+label_encoder = LabelEncoder()
 
-y_encoded = encoder.fit_transform(y)
+y_encoded = label_encoder.fit_transform(y)
 
-class_names = encoder.classes_
+class_names = label_encoder.classes_
 
 print("\nEmotion classes:")
 
@@ -110,22 +114,19 @@ X_test = X[test_mask]
 y_test = y_encoded[test_mask]
 
 
-print("\n" + "=" * 60)
-print("ACTOR-INDEPENDENT DATA SPLIT")
-print("=" * 60)
-
-print(f"Training   : {len(X_train)}")
-print(f"Validation : {len(X_val)}")
-print(f"Testing    : {len(X_test)}")
+print("\nActor-independent split:")
+print("Training:", X_train.shape)
+print("Validation:", X_val.shape)
+print("Testing:", X_test.shape)
 
 
 # ============================================================
 # SHUFFLE TRAINING DATA
 # ============================================================
 
-indices = np.random.permutation(
-    len(X_train)
-)
+rng = np.random.default_rng(42)
+
+indices = rng.permutation(len(X_train))
 
 X_train = X_train[indices]
 y_train = y_train[indices]
@@ -135,40 +136,44 @@ y_train = y_train[indices]
 # NORMALIZATION
 # ============================================================
 
-# Calculate statistics only from training data.
+# Calculate normalization values ONLY from training data
 
-mean = np.mean(
-    X_train,
+mean = X_train.mean(
     axis=(0, 1, 2),
     keepdims=True
 )
 
-std = np.std(
-    X_train,
+std = X_train.std(
     axis=(0, 1, 2),
     keepdims=True
 )
 
-X_train = (
-    X_train - mean
-) / (
-    std + 1e-8
+std = np.maximum(std, 1e-6)
+
+
+X_train = (X_train - mean) / std
+X_val = (X_val - mean) / std
+X_test = (X_test - mean) / std
+
+
+# Save normalization values
+
+np.savez(
+    NORMALIZATION_PATH,
+    mean=mean,
+    std=std
 )
 
-X_val = (
-    X_val - mean
-) / (
-    std + 1e-8
-)
 
-X_test = (
-    X_test - mean
-) / (
-    std + 1e-8
-)
+# ============================================================
+# ADD CHANNEL DIMENSION IF NECESSARY
+# ============================================================
 
+# Expected shape:
+# (samples, 40, 174, 4)
 
-print("\nNormalization complete.")
+print("\nFinal input shape:")
+print(X_train.shape)
 
 
 # ============================================================
@@ -189,157 +194,172 @@ class_weights = dict(
 
 print("\nClass weights:")
 
-for class_id, weight in class_weights.items():
-
+for key, value in class_weights.items():
     print(
-        f"{class_names[class_id]:10s}: "
-        f"{weight:.3f}"
+        f"{class_names[key]:10s}: "
+        f"{value:.4f}"
     )
 
 
 # ============================================================
-# DATA AUGMENTATION
+# BUILD CRNN MODEL
 # ============================================================
 
-data_augmentation = tf.keras.Sequential([
+input_shape = X_train.shape[1:]
 
-    layers.RandomTranslation(
-        height_factor=0.08,
-        width_factor=0.08,
-        fill_mode="nearest"
-    ),
+inputs = layers.Input(
+    shape=input_shape
+)
 
-    layers.RandomZoom(
-        height_factor=0.08,
-        width_factor=0.08
+
+# ------------------------------------------------------------
+# Feature-level noise
+# ------------------------------------------------------------
+
+x = layers.GaussianNoise(
+    0.03
+)(inputs)
+
+
+# ============================================================
+# CNN BLOCK 1
+# ============================================================
+
+x = layers.Conv2D(
+    32,
+    (3, 3),
+    padding="same",
+    activation="relu"
+)(x)
+
+x = layers.BatchNormalization()(x)
+
+x = layers.MaxPooling2D(
+    pool_size=(2, 2)
+)(x)
+
+x = layers.Dropout(
+    0.20
+)(x)
+
+
+# ============================================================
+# CNN BLOCK 2
+# ============================================================
+
+x = layers.Conv2D(
+    64,
+    (3, 3),
+    padding="same",
+    activation="relu"
+)(x)
+
+x = layers.BatchNormalization()(x)
+
+x = layers.MaxPooling2D(
+    pool_size=(2, 2)
+)(x)
+
+x = layers.Dropout(
+    0.25
+)(x)
+
+
+# ============================================================
+# CNN BLOCK 3
+# ============================================================
+
+x = layers.Conv2D(
+    128,
+    (3, 3),
+    padding="same",
+    activation="relu"
+)(x)
+
+x = layers.BatchNormalization()(x)
+
+x = layers.MaxPooling2D(
+    pool_size=(2, 2)
+)(x)
+
+x = layers.Dropout(
+    0.30
+)(x)
+
+
+# ============================================================
+# CONVERT CNN FEATURES INTO SEQUENCE
+# ============================================================
+
+# After pooling:
+#
+# 40 -> 20 -> 10 -> 5
+# 174 -> 87 -> 43 -> 21
+#
+# Shape:
+# (5, 21, 128)
+#
+# We treat the 21 time steps as a sequence.
+
+x = layers.Permute(
+    (2, 1, 3)
+)(x)
+
+
+# Shape:
+# (21, 5, 128)
+
+x = layers.Reshape(
+    (21, 5 * 128)
+)(x)
+
+
+# ============================================================
+# BIDIRECTIONAL LSTM
+# ============================================================
+
+x = layers.Bidirectional(
+    layers.LSTM(
+        96,
+        return_sequences=False
     )
+)(x)
 
-], name="feature_augmentation")
+x = layers.Dropout(
+    0.35
+)(x)
 
 
 # ============================================================
-# CNN MODEL
+# CLASSIFICATION HEAD
 # ============================================================
 
-model = models.Sequential([
+x = layers.Dense(
+    128,
+    activation="relu"
+)(x)
 
-    layers.Input(
-        shape=X_train.shape[1:]
-    ),
+x = layers.BatchNormalization()(x)
 
-    # ========================================================
-    # AUGMENTATION
-    # ========================================================
-
-    data_augmentation,
-
-
-    # ========================================================
-    # CNN BLOCK 1
-    # ========================================================
-
-    layers.Conv2D(
-        32,
-        (3, 3),
-        padding="same",
-        activation="relu"
-    ),
-
-    layers.BatchNormalization(),
-
-    layers.MaxPooling2D(
-        (2, 2)
-    ),
-
-    layers.Dropout(0.20),
+x = layers.Dropout(
+    0.40
+)(x)
 
 
-    # ========================================================
-    # CNN BLOCK 2
-    # ========================================================
-
-    layers.Conv2D(
-        64,
-        (3, 3),
-        padding="same",
-        activation="relu"
-    ),
-
-    layers.BatchNormalization(),
-
-    layers.MaxPooling2D(
-        (2, 2)
-    ),
-
-    layers.Dropout(0.25),
+outputs = layers.Dense(
+    len(class_names),
+    activation="softmax"
+)(x)
 
 
-    # ========================================================
-    # CNN BLOCK 3
-    # ========================================================
+# ============================================================
+# CREATE MODEL
+# ============================================================
 
-    layers.Conv2D(
-        128,
-        (3, 3),
-        padding="same",
-        activation="relu"
-    ),
-
-    layers.BatchNormalization(),
-
-    layers.MaxPooling2D(
-        (2, 2)
-    ),
-
-    layers.Dropout(0.30),
-
-
-    # ========================================================
-    # CNN BLOCK 4
-    # ========================================================
-
-    layers.Conv2D(
-        256,
-        (3, 3),
-        padding="same",
-        activation="relu"
-    ),
-
-    layers.BatchNormalization(),
-
-    layers.MaxPooling2D(
-        (2, 2)
-    ),
-
-    layers.Dropout(0.30),
-
-
-    # ========================================================
-    # GLOBAL POOLING
-    # ========================================================
-
-    layers.GlobalAveragePooling2D(),
-
-
-    # ========================================================
-    # CLASSIFIER
-    # ========================================================
-
-    layers.Dense(
-        128,
-        activation="relu"
-    ),
-
-    layers.BatchNormalization(),
-
-    layers.Dropout(0.40),
-
-    layers.Dense(
-        len(class_names),
-        activation="softmax"
-    )
-
-])
+model = models.Model(
+    inputs=inputs,
+    outputs=outputs
+)
 
 
 # ============================================================
@@ -347,16 +367,11 @@ model = models.Sequential([
 # ============================================================
 
 model.compile(
-
     optimizer=tf.keras.optimizers.Adam(
         learning_rate=0.0005
     ),
-
     loss="sparse_categorical_crossentropy",
-
-    metrics=[
-        "accuracy"
-    ]
+    metrics=["accuracy"]
 )
 
 
@@ -364,10 +379,7 @@ model.compile(
 # MODEL SUMMARY
 # ============================================================
 
-print("\n" + "=" * 60)
-print("MODEL ARCHITECTURE")
-print("=" * 60)
-
+print("\n")
 model.summary()
 
 
@@ -375,44 +387,27 @@ model.summary()
 # CALLBACKS
 # ============================================================
 
-checkpoint = ModelCheckpoint(
-
-    MODEL_PATH,
-
-    monitor="val_accuracy",
-
-    mode="max",
-
-    save_best_only=True,
-
-    verbose=1
-)
-
-
 early_stopping = EarlyStopping(
-
-    monitor="val_accuracy",
-
-    mode="max",
-
+    monitor="val_loss",
     patience=10,
-
     restore_best_weights=True,
-
     verbose=1
 )
 
 
 reduce_lr = ReduceLROnPlateau(
-
     monitor="val_loss",
-
     factor=0.5,
-
     patience=4,
-
     min_lr=1e-6,
+    verbose=1
+)
 
+
+checkpoint = ModelCheckpoint(
+    MODEL_PATH,
+    monitor="val_loss",
+    save_best_only=True,
     verbose=1
 )
 
@@ -421,12 +416,13 @@ reduce_lr = ReduceLROnPlateau(
 # TRAIN
 # ============================================================
 
-print("\n" + "=" * 60)
+print("\n")
+print("=" * 60)
 print("STARTING TRAINING")
 print("=" * 60)
 
-history = model.fit(
 
+history = model.fit(
     X_train,
     y_train,
 
@@ -436,15 +432,14 @@ history = model.fit(
     ),
 
     epochs=60,
-
     batch_size=32,
 
     class_weight=class_weights,
 
     callbacks=[
-        checkpoint,
         early_stopping,
-        reduce_lr
+        reduce_lr,
+        checkpoint
     ],
 
     verbose=1
@@ -452,69 +447,15 @@ history = model.fit(
 
 
 # ============================================================
-# LOAD BEST MODEL
+# SAVE TRAINING HISTORY
 # ============================================================
 
-print("\nLoading best model...")
-
-model = tf.keras.models.load_model(
-    MODEL_PATH
-)
-
-
-# ============================================================
-# FINAL TEST
-# ============================================================
-
-print("\n" + "=" * 60)
-print("FINAL TEST RESULTS")
-print("=" * 60)
-
-test_loss, test_accuracy = model.evaluate(
-    X_test,
-    y_test,
-    verbose=0
-)
-
-print(
-    f"\nTest Loss     : {test_loss:.4f}"
-)
-
-print(
-    f"Test Accuracy : {test_accuracy * 100:.2f}%"
-)
-
-
-# ============================================================
-# PREDICTIONS
-# ============================================================
-
-probabilities = model.predict(
-    X_test,
-    verbose=0
-)
-
-predictions = np.argmax(
-    probabilities,
-    axis=1
-)
-
-
-# ============================================================
-# CLASSIFICATION REPORT
-# ============================================================
-
-print("\n" + "=" * 60)
-print("CLASSIFICATION REPORT")
-print("=" * 60)
-
-print(
-    classification_report(
-        y_test,
-        predictions,
-        target_names=class_names,
-        zero_division=0
-    )
+np.savez(
+    HISTORY_PATH,
+    loss=history.history["loss"],
+    accuracy=history.history["accuracy"],
+    val_loss=history.history["val_loss"],
+    val_accuracy=history.history["val_accuracy"]
 )
 
 
@@ -529,16 +470,30 @@ np.save(
 
 
 # ============================================================
-# SAVE NORMALIZATION PARAMETERS
+# FINAL TEST EVALUATION
 # ============================================================
 
-np.savez(
-    os.path.join(
-        MODEL_DIR,
-        "normalization.npz"
-    ),
-    mean=mean,
-    std=std
+print("\n")
+print("=" * 60)
+print("FINAL TEST EVALUATION")
+print("=" * 60)
+
+
+test_loss, test_accuracy = model.evaluate(
+    X_test,
+    y_test,
+    verbose=0
+)
+
+
+print(
+    f"\nTest Loss: "
+    f"{test_loss:.4f}"
+)
+
+print(
+    f"Test Accuracy: "
+    f"{test_accuracy * 100:.2f}%"
 )
 
 
@@ -546,19 +501,27 @@ np.savez(
 # COMPLETE
 # ============================================================
 
-print("\n" + "=" * 60)
+print("\n")
+print("=" * 60)
 print("TRAINING COMPLETE")
 print("=" * 60)
 
 print(
-    f"Model saved to: {MODEL_PATH}"
+    f"\nModel saved to:\n"
+    f"{MODEL_PATH}"
 )
 
 print(
-    f"Labels saved to: {LABEL_PATH}"
+    f"\nLabels saved to:\n"
+    f"{LABEL_PATH}"
 )
 
 print(
-    "Normalization saved to: "
-    "models\\normalization.npz"
+    f"\nNormalization saved to:\n"
+    f"{NORMALIZATION_PATH}"
+)
+
+print(
+    f"\nTraining history saved to:\n"
+    f"{HISTORY_PATH}"
 )
