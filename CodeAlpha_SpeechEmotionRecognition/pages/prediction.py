@@ -1,5 +1,6 @@
 import os
 import tempfile
+import textwrap
 
 import pandas as pd
 import streamlit as st
@@ -19,30 +20,37 @@ from utils.model_utils import (
 from utils.styles import render_footer
 from utils.styles import apply_custom_css
 
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. HTML snippets defined inside
+    nested Python blocks (with/if/for) pick up that indentation
+    from the triple-quoted string and get rendered as literal
+    code instead of parsed HTML. Dedenting fixes that.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
+
+
 apply_custom_css()
 
 # ============================================================
 # PAGE HEADER
 # ============================================================
 
-st.markdown(
-    '<div class="section-label">AI PREDICTION</div>',
-    unsafe_allow_html=True
-)
+md('<div class="section-label">AI PREDICTION</div>')
 
-st.markdown(
-    '<h1 class="page-title">Emotion Prediction</h1>',
-    unsafe_allow_html=True
-)
+md('<h1 class="page-title">Emotion Prediction</h1>')
 
-st.markdown(
+md(
     """
     <p class="page-subtitle">
         Upload or record your speech and let the deep learning
         model estimate the emotional characteristics of the audio.
     </p>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -50,10 +58,7 @@ st.markdown(
 # AUDIO INPUT
 # ============================================================
 
-st.markdown(
-    '<div class="section-label">AUDIO INPUT</div>',
-    unsafe_allow_html=True
-)
+md('<div class="section-label">AUDIO INPUT</div>')
 
 input_method = st.radio(
     "Choose how you want to provide audio",
@@ -102,7 +107,7 @@ if input_method == "Upload Audio":
 
 else:
 
-    st.markdown(
+    md(
         """
         <div class="info-card">
             <h3>🎙️ Record your voice</h3>
@@ -111,8 +116,7 @@ else:
                 short speech sample.
             </p>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     recorded_audio = st.audio_input(
@@ -264,10 +268,7 @@ if audio_bytes is not None:
 
             st.markdown("---")
 
-            st.markdown(
-                '<div class="section-label">PREDICTION RESULT</div>',
-                unsafe_allow_html=True
-            )
+            md('<div class="section-label">PREDICTION RESULT</div>')
 
 
             # ====================================================
@@ -283,30 +284,15 @@ if audio_bytes is not None:
                 confidence * 100
             )
 
-
-            st.markdown(
+            md(
                 f"""
                 <div class="prediction-card">
-
-                    <div class="prediction-emoji">
-                        {emoji}
-                    </div>
-
-                    <div class="prediction-label">
-                        DETECTED EMOTION
-                    </div>
-
-                    <div class="prediction-emotion">
-                        {emotion.upper()}
-                    </div>
-
-                    <div class="prediction-confidence">
-                        Confidence: {confidence_percentage:.2f}%
-                    </div>
-
+                    <div class="prediction-emoji">{emoji}</div>
+                    <div class="prediction-label">DETECTED EMOTION</div>
+                    <div class="prediction-emotion">{emotion.upper()}</div>
+                    <div class="prediction-confidence">Confidence: {confidence_percentage:.2f}%</div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
 
@@ -346,11 +332,10 @@ if audio_bytes is not None:
 
             st.markdown("---")
 
-            st.markdown(
+            md(
                 '<div class="section-label">'
                 'PROBABILITY DISTRIBUTION'
-                '</div>',
-                unsafe_allow_html=True
+                '</div>'
             )
 
             st.markdown(
@@ -477,7 +462,7 @@ if "predicted_emotion" in st.session_state:
 
     st.markdown("---")
 
-    st.markdown(
+    md(
         """
         <div class="info-card">
             <h3>📊 Explore Your Audio</h3>
@@ -486,8 +471,7 @@ if "predicted_emotion" in st.session_state:
                 and other audio characteristics.
             </p>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     st.page_link(
