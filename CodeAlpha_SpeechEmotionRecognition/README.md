@@ -11,7 +11,7 @@ The complete application is built and deployed using Streamlit.
 ## 🚀 Live Demo
 
 🔗 **Live App:**  
-https://YOUR-STREAMLIT-APP-LINK.streamlit.app/
+[https://YOUR-STREAMLIT-APP-LINK.streamlit.app/](https://speech-emotion-recognition10.streamlit.app/)
 
 🔗 **GitHub Repository:**  
 [https://github.com/mehul-10/CodeAlpha_SpeechEmotionRecognition](https://github.com/mehul-10/CodeAlpha/tree/main/CodeAlpha_SpeechEmotionRecognition)
