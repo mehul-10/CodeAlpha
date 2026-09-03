@@ -1,34 +1,52 @@
+import textwrap
+
 import streamlit as st
 
-from utils.styles import render_footer
+from utils.styles import apply_custom_css, render_footer
+
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. Because our HTML snippets live
+    inside nested Python blocks (for loops, with-blocks, etc.),
+    the triple-quoted strings pick up that indentation and get
+    rendered as literal code instead of parsed HTML. Dedenting
+    here fixes that for every call site.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
+
+
+# ============================================================
+# CSS
+# ============================================================
+
+apply_custom_css()
 
 
 # ============================================================
 # HERO
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="hero">
-
         <div class="hero-badge">
             🎙️ Deep Learning · Speech Analysis
         </div>
-
         <div class="hero-title">
             Speech Emotion<br>
             Recognition
         </div>
-
         <div class="hero-subtitle">
             Analyze speech recordings and explore how
             deep learning can identify emotional patterns
             from audio.
         </div>
-
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -36,14 +54,13 @@ st.markdown(
 # CTA
 # ============================================================
 
-col1, col2 = st.columns([1, 2])
+col1, col2, col3 = st.columns([1.2, 1, 2])
 
 with col1:
-
     if st.button(
         "🎤 Analyze Your Audio",
-        use_container_width=True,
-        type="primary"
+        type="primary",
+        use_container_width=True
     ):
         st.switch_page("pages/prediction.py")
 
@@ -54,84 +71,60 @@ with col1:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-c1, c2, c3, c4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4)
 
-with c1:
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-value">1,440</div>
-            <div class="stat-label">Audio Samples</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+stats = [
+    ("1,440", "Audio Samples"),
+    ("8", "Emotions"),
+    ("24", "Actors"),
+    ("CNN + BiLSTM", "Architecture"),
+]
 
-with c2:
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-value">8</div>
-            <div class="stat-label">Emotions</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c3:
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-value">24</div>
-            <div class="stat-label">Actors</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with c4:
-    st.markdown(
-        """
-        <div class="stat-card">
-            <div class="stat-value">CNN + BiLSTM</div>
-            <div class="stat-label">Model Architecture</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+for column, (value, label) in zip(
+    [col1, col2, col3, col4],
+    stats
+):
+    with column:
+        md(
+            f"""
+            <div class="stat-card">
+                <div class="stat-value">
+                    {value}
+                </div>
+                <div class="stat-label">
+                    {label}
+                </div>
+            </div>
+            """
+        )
 
 
 # ============================================================
-# ABOUT
+# ABOUT PROJECT
 # ============================================================
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="section-label">About the project</div>',
-    unsafe_allow_html=True
+md(
+    """
+    <div class="section-label">ABOUT THE PROJECT</div>
+    <h2>How does it work?</h2>
+    """
 )
 
-st.markdown(
+md(
     """
-    <div class="card">
-
-        <div class="card-title">
-            How does it work?
-        </div>
-
-        <div class="card-text">
+    <div class="content-card">
+        <p>
             The application converts speech into numerical
             audio representations including MFCC, Delta,
             Delta-Delta and Mel-Spectrogram features.
+        </p>
+        <p>
             These features are processed by a convolutional
             neural network and a bidirectional LSTM to
             produce an emotion prediction.
-        </div>
-
+        </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -139,77 +132,126 @@ st.markdown(
 # WORKFLOW
 # ============================================================
 
-st.markdown(
-    '<div class="section-label">Workflow</div>',
-    unsafe_allow_html=True
+md(
+    """
+    <div class="section-label">WORKFLOW</div>
+    <h2>From Audio to Prediction</h2>
+    """
 )
 
-col1, col2, col3 = st.columns(3)
+steps = [
+    (
+        "01",
+        "Record or Upload",
+        "Provide a speech recording through the application."
+    ),
+    (
+        "02",
+        "Extract Features",
+        "Convert the audio into MFCC, Delta, Delta-Delta and Log-Mel features."
+    ),
+    (
+        "03",
+        "Analyze with AI",
+        "The CNN extracts spatial patterns while the BiLSTM captures temporal information."
+    ),
+    (
+        "04",
+        "Predict Emotion",
+        "The trained model generates probabilities across eight emotion classes."
+    ),
+]
 
-with col1:
-    st.markdown(
-        """
-        <div class="card">
-            <div style="font-size:2rem;">🎤</div>
-            <div class="card-title">
-                01 · Provide Audio
+for number, title, description in steps:
+    md(
+        f"""
+        <div class="workflow-step">
+            <div class="workflow-number">
+                {number}
             </div>
-            <div class="card-text">
-                Upload a WAV file or record speech
-                directly through your browser.
+            <div>
+                <h3>{title}</h3>
+                <p>{description}</p>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
-with col2:
-    st.markdown(
-        """
-        <div class="card">
-            <div style="font-size:2rem;">🔬</div>
-            <div class="card-title">
-                02 · Extract Features
-            </div>
-            <div class="card-text">
-                Extract MFCC, delta, delta-delta and
-                Mel-spectrogram representations.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
-with col3:
-    st.markdown(
-        """
-        <div class="card">
-            <div style="font-size:2rem;">🧠</div>
-            <div class="card-title">
-                03 · Predict Emotion
+# ============================================================
+# SUPPORTED EMOTIONS
+# ============================================================
+
+md(
+    """
+    <div class="section-label">SUPPORTED EMOTIONS</div>
+    <h2>What can the model recognize?</h2>
+    """
+)
+
+emotions = [
+    ("😠", "Angry"),
+    ("😌", "Calm"),
+    ("🤢", "Disgust"),
+    ("😨", "Fearful"),
+    ("😊", "Happy"),
+    ("😐", "Neutral"),
+    ("😢", "Sad"),
+    ("😲", "Surprised"),
+]
+
+cols = st.columns(4)
+
+for index, (emoji, emotion) in enumerate(emotions):
+    with cols[index % 4]:
+        md(
+            f"""
+            <div class="emotion-card">
+                <div class="emotion-icon">
+                    {emoji}
+                </div>
+                <div class="emotion-name">
+                    {emotion}
+                </div>
             </div>
-            <div class="card-text">
-                The CNN-BiLSTM model predicts one
-                of eight emotional categories.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            """
+        )
 
 
 # ============================================================
 # DISCLAIMER
 # ============================================================
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-st.warning(
-    "This application is an educational machine-learning "
-    "project. Its predictions are experimental and should "
-    "not be treated as a definitive assessment of a person's "
-    "actual emotional state."
+md(
+    """
+    <div class="disclaimer">
+        <strong>⚠️ Educational Project</strong>
+        <p>
+            This application is designed for educational and
+            experimental purposes. Speech emotion recognition
+            predictions should not be interpreted as definitive
+            statements about a person's actual emotional state.
+        </p>
+    </div>
+    """
 )
 
+
+# ============================================================
+# NAVIGATION
+# ============================================================
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+st.page_link(
+    "pages/prediction.py",
+    label="🎤 Start Emotion Prediction →",
+    use_container_width=True
+)
+
+
+# ============================================================
+# FOOTER
+# ============================================================
 
 render_footer()

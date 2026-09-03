@@ -10,12 +10,16 @@ from utils.audio_utils import (
     get_audio_info,
     cleanup_audio,
 )
+
 from utils.model_utils import (
     predict_emotion,
     EMOTION_EMOJIS,
 )
-from utils.styles import render_footer
 
+from utils.styles import render_footer
+from utils.styles import apply_custom_css
+
+apply_custom_css()
 
 # ============================================================
 # PAGE HEADER
@@ -82,6 +86,7 @@ if input_method == "Upload Audio":
         audio_bytes = uploaded_file.getvalue()
         audio_name = uploaded_file.name
 
+        # Store audio for Audio Analysis page
         st.session_state["analysis_audio_bytes"] = audio_bytes
         st.session_state["analysis_audio_name"] = audio_name
 
@@ -119,6 +124,7 @@ else:
         audio_bytes = recorded_audio.getvalue()
         audio_name = "recorded_audio.wav"
 
+        # Store audio for Audio Analysis page
         st.session_state["analysis_audio_bytes"] = audio_bytes
         st.session_state["analysis_audio_name"] = audio_name
 
@@ -129,7 +135,7 @@ else:
 
 
 # ============================================================
-# ANALYZE BUTTON
+# ANALYZE AUDIO
 # ============================================================
 
 if audio_bytes is not None:
@@ -186,6 +192,10 @@ if audio_bytes is not None:
                 )
 
 
+            # ====================================================
+            # FEATURE EXTRACTION CHECK
+            # ====================================================
+
             if features is None:
 
                 st.error(
@@ -228,14 +238,24 @@ if audio_bytes is not None:
 
 
             # ====================================================
-            # STORE RESULTS IN SESSION
+            # STORE RESULTS IN SESSION STATE
             # ====================================================
 
             st.session_state["predicted_emotion"] = emotion
+
             st.session_state["prediction_confidence"] = confidence
-            st.session_state["prediction_probabilities"] = probabilities
-            st.session_state["prediction_duration"] = duration
-            st.session_state["prediction_sample_rate"] = sample_rate
+
+            st.session_state[
+                "prediction_probabilities"
+            ] = probabilities
+
+            st.session_state[
+                "prediction_duration"
+            ] = duration
+
+            st.session_state[
+                "prediction_sample_rate"
+            ] = sample_rate
 
 
             # ====================================================
@@ -321,19 +341,26 @@ if audio_bytes is not None:
 
 
             # ====================================================
-            # PROBABILITY BAR CHART
+            # PROBABILITY DISTRIBUTION
             # ====================================================
 
             st.markdown("---")
 
             st.markdown(
-                '<div class="section-label">PROBABILITY DISTRIBUTION</div>',
+                '<div class="section-label">'
+                'PROBABILITY DISTRIBUTION'
+                '</div>',
                 unsafe_allow_html=True
             )
 
             st.markdown(
                 "### Emotion Probabilities"
             )
+
+
+            # ====================================================
+            # EMOTION LABELS
+            # ====================================================
 
             labels = [
                 "angry",
@@ -347,10 +374,18 @@ if audio_bytes is not None:
             ]
 
 
+            # ====================================================
+            # CONVERT TO PERCENTAGE
+            # ====================================================
+
             probability_values = (
                 probabilities * 100
             )
 
+
+            # ====================================================
+            # CREATE DATAFRAME
+            # ====================================================
 
             probability_df = pd.DataFrame(
                 {
@@ -359,20 +394,27 @@ if audio_bytes is not None:
                 }
             )
 
+
+            # ====================================================
+            # SORT PROBABILITIES
+            # ====================================================
+
             probability_df = probability_df.sort_values(
                 "Probability",
                 ascending=False
             )
 
+
+            # ====================================================
+            # BAR CHART
+            # ====================================================
+
             chart_df = probability_df.set_index(
                 "Emotion"
             )
 
-
             st.bar_chart(
-                chart_df[
-                    "Probability"
-                ],
+                chart_df["Probability"],
                 use_container_width=True
             )
 
@@ -401,34 +443,9 @@ if audio_bytes is not None:
                 )
 
 
-            # ====================================================
-            # AUDIO ANALYSIS BUTTON
-            # ====================================================
-
-            st.markdown("---")
-
-            st.markdown(
-                """
-                <div class="info-card">
-                    <h3>📊 Explore your audio</h3>
-                    <p>
-                        View the waveform, Mel spectrogram and MFCC
-                        representation of this recording.
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            if st.button(
-                "Open Audio Analysis →",
-                use_container_width=True
-            ):
-
-                st.switch_page(
-                    "pages/analysis.py"
-                )
-
+        # ========================================================
+        # ERROR HANDLING
+        # ========================================================
 
         except Exception as e:
 
@@ -438,6 +455,10 @@ if audio_bytes is not None:
 
             st.exception(e)
 
+
+        # ========================================================
+        # CLEANUP TEMP FILE
+        # ========================================================
 
         finally:
 
@@ -449,10 +470,38 @@ if audio_bytes is not None:
 
 
 # ============================================================
+# OPEN AUDIO ANALYSIS
+# ============================================================
+
+if "predicted_emotion" in st.session_state:
+
+    st.markdown("---")
+
+    st.markdown(
+        """
+        <div class="info-card">
+            <h3>📊 Explore Your Audio</h3>
+            <p>
+                View the waveform, Mel spectrogram, MFCC features,
+                and other audio characteristics.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.page_link(
+        "pages/analysis.py",
+        label="📊 Open Audio Analysis →",
+        use_container_width=True
+    )
+
+
+# ============================================================
 # NO AUDIO SELECTED
 # ============================================================
 
-else:
+elif audio_bytes is None:
 
     st.info(
         "🎙️ Upload a WAV file or record your voice "

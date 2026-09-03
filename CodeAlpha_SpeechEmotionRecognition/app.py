@@ -1,6 +1,21 @@
+import textwrap
+
 import streamlit as st
 
 from utils.styles import apply_custom_css, render_footer
+
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. HTML snippets defined inside
+    nested Python blocks (with/if/for) pick up that indentation
+    from the triple-quoted string and get rendered as literal
+    code instead of parsed HTML. Dedenting fixes that.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
 
 
 # ============================================================
@@ -28,14 +43,13 @@ apply_custom_css()
 
 with st.sidebar:
 
-    st.markdown(
+    md(
         """
         <div style="
             padding: 0.5rem 0 1.5rem 0;
             text-align: center;
         ">
             <div style="font-size: 2.2rem;">🎙️</div>
-
             <div style="
                 font-size: 1.15rem;
                 font-weight: 800;
@@ -44,7 +58,6 @@ with st.sidebar:
             ">
                 Speech Emotion AI
             </div>
-
             <div style="
                 font-size: 0.78rem;
                 color: #6b7280;
@@ -53,15 +66,14 @@ with st.sidebar:
                 Deep Learning Project
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     st.divider()
 
     st.caption("Explore")
 
-    st.markdown(
+    md(
         """
         <div style="
             padding: 0.8rem 0;
@@ -73,13 +85,12 @@ with st.sidebar:
             features, and learn how the
             emotion recognition model works.
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     st.divider()
 
-    st.markdown(
+    md(
         """
         <div style="text-align:center;">
             <div style="
@@ -89,16 +100,13 @@ with st.sidebar:
             ">
                 Built by
             </div>
-
             <div style="
                 font-weight: 700;
                 color: #111827;
             ">
                 Mehul Gupta
             </div>
-
             <div style="margin-top: 0.8rem;">
-
                 <a href="https://github.com/mehul-10"
                    target="_blank"
                    style="
@@ -109,7 +117,6 @@ with st.sidebar:
                    ">
                     GitHub
                 </a>
-
                 <a href="https://www.linkedin.com/in/mehulgupta-developer/"
                    target="_blank"
                    style="
@@ -119,11 +126,9 @@ with st.sidebar:
                    ">
                     LinkedIn
                 </a>
-
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
