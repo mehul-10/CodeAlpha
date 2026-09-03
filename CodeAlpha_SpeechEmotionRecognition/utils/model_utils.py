@@ -6,7 +6,6 @@ import streamlit as st
 import tensorflow as tf
 
 
-# utils/model_utils.py -> parent is utils/, parent.parent is the app root
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 MODEL_PATH = str(BASE_DIR / "models" / "speech_emotion_crnn.keras")
