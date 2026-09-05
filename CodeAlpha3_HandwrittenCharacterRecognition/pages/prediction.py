@@ -1,9 +1,29 @@
+import textwrap
+
 import streamlit as st
 from PIL import Image
 
 from utils.image_utils import preprocess_image
 from utils.model_utils import predict_digit
 from utils.styles import apply_custom_css, render_footer
+
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. HTML snippets defined inside
+    nested Python blocks (with/if/for) pick up that indentation
+    from the triple-quoted string and get rendered as literal
+    code instead of parsed HTML. Dedenting fixes that.
+
+    IMPORTANT: blank lines *inside* the HTML also break rendering,
+    since Markdown treats a blank line as the end of a raw HTML
+    block. Never leave a fully empty line between tags in the
+    strings passed to this function -- use <br> instead.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
 
 
 # ============================================================
@@ -23,7 +43,7 @@ apply_custom_css()
 # HEADER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="page-header">
         <div class="section-label">AI PREDICTION</div>
@@ -33,8 +53,7 @@ st.markdown(
             trained CNN identify it.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -42,7 +61,7 @@ st.markdown(
 # UPLOAD SECTION
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="content-card">
         <div class="card-title">Upload a handwritten digit</div>
@@ -51,8 +70,7 @@ st.markdown(
             from 0 to 9.
         </div>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 uploaded_file = st.file_uploader(
@@ -98,13 +116,12 @@ if uploaded_file is not None:
         # Display images
         # ----------------------------------------------------
 
-        st.markdown(
+        md(
             """
             <div class="section-label">
                 IMAGE PROCESSING
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         col1, col2 = st.columns(2)
@@ -140,18 +157,14 @@ if uploaded_file is not None:
         # Prediction result
         # ----------------------------------------------------
 
-        st.markdown(
-            "<br>",
-            unsafe_allow_html=True
-        )
+        md("<br>")
 
-        st.markdown(
+        md(
             """
             <div class="section-label">
                 PREDICTION RESULT
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         result_col1, result_col2 = st.columns(
@@ -160,19 +173,14 @@ if uploaded_file is not None:
 
         with result_col1:
 
-            st.markdown(
+            md(
                 f"""
                 <div class="prediction-card">
                     <div class="prediction-emoji">🔢</div>
-                    <div class="prediction-emotion">
-                        {predicted_digit}
-                    </div>
-                    <div class="prediction-confidence">
-                        Predicted Digit
-                    </div>
+                    <div class="prediction-emotion">{predicted_digit}</div>
+                    <div class="prediction-confidence">Predicted Digit</div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
         with result_col2:
@@ -215,13 +223,12 @@ if uploaded_file is not None:
         # Probability distribution
         # ----------------------------------------------------
 
-        st.markdown(
+        md(
             """
             <div class="section-label">
                 MODEL PROBABILITIES
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         probability_data = {
@@ -282,20 +289,18 @@ else:
     # EMPTY STATE
     # ========================================================
 
-    st.markdown(
+    md(
         """
         <div class="content-card">
             <div class="card-title">
                 Ready for a prediction?
             </div>
-
             <div class="card-text">
                 Upload a PNG, JPG, or JPEG image containing
                 a single handwritten digit.
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
@@ -303,13 +308,12 @@ else:
 # MODEL INFORMATION
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="content-card">
         <div class="card-title">
             About the model
         </div>
-
         <div class="card-text">
             This application uses a Convolutional Neural Network
             trained on the MNIST handwritten digit dataset.
@@ -317,8 +321,7 @@ st.markdown(
             on 10,000 unseen MNIST test images.
         </div>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -326,7 +329,7 @@ st.markdown(
 # DISCLAIMER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="disclaimer">
         <strong>Educational Project</strong><br>
@@ -335,8 +338,7 @@ st.markdown(
         handwriting style, image quality, positioning, and
         preprocessing.
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 

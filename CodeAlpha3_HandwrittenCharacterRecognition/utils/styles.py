@@ -324,6 +324,35 @@ def apply_custom_css():
             }
 
         }
+        /* ==================================================
+   WORKFLOW
+   ================================================== */
+
+.workflow-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #333333;
+    line-height: 1.5;
+}
+
+.workflow-step span {
+    color: #777777;
+    font-size: 14px;
+}
+
+.workflow-number {
+    min-width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #f2f2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #333333;
+}
 
         </style>
         """,
