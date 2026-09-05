@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import streamlit as st
 import tensorflow as tf
@@ -8,7 +10,13 @@ import tensorflow as tf
 # CONFIGURATION
 # ============================================================
 
-MODEL_PATH = "models/mnist_cnn.keras"
+# utils/model_utils.py -> parent is utils/, parent.parent is the app root.
+# Using an absolute path anchored to this file avoids relying on the
+# process's current working directory, which on Streamlit Cloud is the
+# repo root rather than this project's subfolder.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MODEL_PATH = str(BASE_DIR / "models" / "mnist_cnn.keras")
 
 DIGIT_LABELS = [
     "0", "1", "2", "3", "4",
@@ -97,7 +105,7 @@ def predict_digit(image_array):
         )
 
     # --------------------------------------------------------
-    # Normalize if image is still in 0–255 range
+    # Normalize if image is still in 0-255 range
     # --------------------------------------------------------
 
     if image_array.max() > 1.0:
