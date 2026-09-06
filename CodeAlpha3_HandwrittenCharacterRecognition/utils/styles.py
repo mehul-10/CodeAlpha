@@ -225,7 +225,24 @@ def apply_custom_css():
             border-radius: 14px;
             padding: 18px;
         }
+h1 {
+    font-size: 42px !important;
+    font-weight: 750 !important;
+    letter-spacing: -1.5px;
+    color: #111111 !important;
+}
 
+h2 {
+    color: #111111 !important;
+}
+
+h3 {
+    color: #222222 !important;
+}
+
+p {
+    color: #555555 !important;
+}
         /* ==================================================
            BUTTONS
         ================================================== */
