@@ -1,9 +1,29 @@
 import os
+import textwrap
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
-from utils.styles import inject_css, render_footer
+from app_utils.styles import apply_custom_css, render_footer
+
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. HTML snippets defined inside
+    nested Python blocks (with/if/for) pick up that indentation
+    from the triple-quoted string and get rendered as literal
+    code instead of parsed HTML. Dedenting fixes that.
+
+    IMPORTANT: blank lines *inside* the HTML also break rendering,
+    since Markdown treats a blank line as the end of a raw HTML
+    block. Never leave a fully empty line between tags in the
+    strings passed to this function -- use <br> instead.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
 
 
 # ============================================================
@@ -16,14 +36,21 @@ st.set_page_config(
     layout="wide"
 )
 
-inject_css()
+apply_custom_css()
+
+
+# pages/analysis.py -> parent is pages/, parent.parent is the app root.
+# Using absolute paths anchored to this file avoids relying on the
+# process's current working directory, which on Streamlit Cloud is the
+# repo root rather than this project's subfolder.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="page-header">
         <div class="eyebrow">MODEL PERFORMANCE</div>
@@ -33,8 +60,7 @@ st.markdown(
             understand the factors influencing predictions.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -44,7 +70,7 @@ st.markdown(
 
 st.markdown("### 📊 Model Comparison")
 
-comparison_path = "models/model_comparison.csv"
+comparison_path = str(BASE_DIR / "models" / "model_comparison.csv")
 
 if os.path.exists(comparison_path):
 
@@ -81,7 +107,7 @@ else:
 
 st.markdown("### 🏆 Selected Model")
 
-st.markdown(
+md(
     """
     <div class="info-card">
         <h3>Random Forest Classifier</h3>
@@ -91,8 +117,7 @@ st.markdown(
             It also provided the highest ROC-AUC score in the comparison.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -123,7 +148,7 @@ with col4:
 
 st.markdown("### 🔲 Confusion Matrix")
 
-confusion_path = "models/evaluation/confusion_matrix.png"
+confusion_path = str(BASE_DIR / "models" / "evaluation" / "confusion_matrix.png")
 
 if os.path.exists(confusion_path):
     st.image(
@@ -153,7 +178,7 @@ else:
 
 st.markdown("### 📉 ROC Curve")
 
-roc_path = "models/evaluation/roc_curve.png"
+roc_path = str(BASE_DIR / "models" / "evaluation" / "roc_curve.png")
 
 if os.path.exists(roc_path):
     st.image(
@@ -171,7 +196,7 @@ else:
 
 st.markdown("### 🧠 Feature Importance")
 
-feature_path = "models/evaluation/feature_importance.png"
+feature_path = str(BASE_DIR / "models" / "evaluation" / "feature_importance.png")
 
 if os.path.exists(feature_path):
     st.image(
@@ -187,7 +212,7 @@ else:
 # FEATURE TABLE
 # ============================================================
 
-csv_path = "models/evaluation/feature_importance.csv"
+csv_path = str(BASE_DIR / "models" / "evaluation" / "feature_importance.csv")
 
 if os.path.exists(csv_path):
 
@@ -206,7 +231,7 @@ if os.path.exists(csv_path):
 # DISCLAIMER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="disclaimer">
         <strong>⚠️ Educational Project</strong><br>
@@ -214,8 +239,7 @@ st.markdown(
         concepts only. The model should not be used as a medical
         diagnostic system or as a substitute for professional medical advice.
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 

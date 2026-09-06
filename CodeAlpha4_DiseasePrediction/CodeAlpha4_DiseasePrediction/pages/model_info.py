@@ -1,6 +1,26 @@
+import textwrap
+
 import streamlit as st
 
-from utils.styles import inject_css, render_footer
+from app_utils.styles import apply_custom_css, render_footer
+
+
+def md(html: str) -> None:
+    """
+    st.markdown wrapper that strips leading indentation.
+
+    Markdown treats any line indented with 4+ spaces as a
+    preformatted code block. HTML snippets defined inside
+    nested Python blocks (with/if/for) pick up that indentation
+    from the triple-quoted string and get rendered as literal
+    code instead of parsed HTML. Dedenting fixes that.
+
+    IMPORTANT: blank lines *inside* the HTML also break rendering,
+    since Markdown treats a blank line as the end of a raw HTML
+    block. Never leave a fully empty line between tags in the
+    strings passed to this function -- use <br> instead.
+    """
+    st.markdown(textwrap.dedent(html).strip(), unsafe_allow_html=True)
 
 
 # ============================================================
@@ -13,14 +33,14 @@ st.set_page_config(
     layout="wide"
 )
 
-inject_css()
+apply_custom_css()
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="page-header">
         <div class="eyebrow">TECHNICAL DETAILS</div>
@@ -30,8 +50,7 @@ st.markdown(
             and machine learning algorithms used by MediPredict.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -41,7 +60,7 @@ st.markdown(
 
 st.markdown("### 📁 Dataset")
 
-st.markdown(
+md(
     """
     <div class="info-card">
         <h3>Pima Indians Diabetes Dataset</h3>
@@ -50,8 +69,7 @@ st.markdown(
             used to predict whether a patient has diabetes.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 col1, col2, col3 = st.columns(3)
@@ -85,14 +103,13 @@ features = {
 
 for feature, description in features.items():
 
-    st.markdown(
+    md(
         f"""
         <div class="feature-row">
             <strong>{feature}</strong>
             <span>{description}</span>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
@@ -112,7 +129,7 @@ steps = [
 
 for number, title, description in steps:
 
-    st.markdown(
+    md(
         f"""
         <div class="workflow-step">
             <div class="workflow-number">{number}</div>
@@ -121,8 +138,7 @@ for number, title, description in steps:
                 <p>{description}</p>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
@@ -149,14 +165,13 @@ models = [
 
 for name, description in models:
 
-    st.markdown(
+    md(
         f"""
         <div class="info-card">
             <h3>{name}</h3>
             <p>{description}</p>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
@@ -166,7 +181,7 @@ for name, description in models:
 
 st.markdown("### 🏆 Final Model")
 
-st.markdown(
+md(
     """
     <div class="hero-card">
         <div class="eyebrow">SELECTED MODEL</div>
@@ -176,8 +191,7 @@ st.markdown(
             models and was selected as the final prediction model.
         </p>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
@@ -197,14 +211,13 @@ metric_descriptions = {
 
 for metric, description in metric_descriptions.items():
 
-    st.markdown(
+    md(
         f"""
         <div class="feature-row">
             <strong>{metric}</strong>
             <span>{description}</span>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 
@@ -212,7 +225,7 @@ for metric, description in metric_descriptions.items():
 # DISCLAIMER
 # ============================================================
 
-st.markdown(
+md(
     """
     <div class="disclaimer">
         <strong>⚠️ Important</strong><br>
@@ -220,8 +233,7 @@ st.markdown(
         It is not intended for medical diagnosis, treatment decisions,
         or clinical use.
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
 
