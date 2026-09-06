@@ -116,9 +116,18 @@ def apply_custom_css():
             color: var(--ink-700) !important;
         }
 
-        p {
-            color: var(--ink-500) !important;
-        }
+      p,
+li,
+ul,
+ol,
+span:not(.hero-badge):not(.eyebrow):not(.stat-label):not(.workflow-step span):not(.feature-row span):not(.section-label) {
+    color: var(--ink-500) !important;
+}
+
+strong,
+b {
+    color: var(--ink-900) !important;
+}
 
         /* ==================================================
            PAGE HEADER
