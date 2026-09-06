@@ -1,5 +1,6 @@
 import os
 import textwrap
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -45,7 +46,13 @@ apply_custom_css()
 # PATHS
 # ============================================================
 
-EVALUATION_DIR = "models/evaluation"
+# pages/analysis.py -> parent is pages/, parent.parent is the app root.
+# Using an absolute path anchored to this file avoids relying on the
+# process's current working directory, which on Streamlit Cloud is the
+# repo root rather than this project's subfolder.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+EVALUATION_DIR = str(BASE_DIR / "models" / "evaluation")
 
 METRICS_PATH = os.path.join(
     EVALUATION_DIR,
