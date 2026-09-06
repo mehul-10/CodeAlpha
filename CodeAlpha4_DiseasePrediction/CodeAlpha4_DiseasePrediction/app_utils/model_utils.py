@@ -1,10 +1,18 @@
 import os
+from pathlib import Path
+
 import joblib
 import pandas as pd
 import streamlit as st
 
 
-MODEL_PATH = "models/disease_prediction_model.pkl"
+# app_utils/model_utils.py -> parent is app_utils/, parent.parent is the
+# app root. Using an absolute path anchored to this file avoids relying
+# on the process's current working directory, which on Streamlit Cloud
+# is the repo root rather than this project's subfolder.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MODEL_PATH = str(BASE_DIR / "models" / "disease_prediction_model.pkl")
 
 
 FEATURES = [
